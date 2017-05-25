@@ -49,19 +49,6 @@ project(":gdx-video-desktop") {
 
 }
 
-project(":gdx-video-android") {
-
-    dependencies {
-        compile project(":gdx-video")
-        compile files("libs/android-4.4.jar")
-        compile "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
-        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi"
-        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
-    }
-
-}
-
-
 tasks.eclipse.doLast {
     delete ".project"
 }
