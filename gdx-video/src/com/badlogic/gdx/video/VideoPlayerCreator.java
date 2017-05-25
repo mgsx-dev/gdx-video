@@ -33,7 +33,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
  * @author Rob Bogie <rob.bogie@codepoke.net>
  */
 public class VideoPlayerCreator {
-	 private static Class<? extends VideoPlayer> videoPlayerClass;
+	 public static Class<? extends VideoPlayer> videoPlayerClass;
 
 	 /**
 	  * Creates a VideoPlayer with default rendering parameters. It will use a FitViewport which uses the video size as
