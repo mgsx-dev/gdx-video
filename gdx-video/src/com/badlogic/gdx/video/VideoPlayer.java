@@ -19,6 +19,7 @@ package com.badlogic.gdx.video;
 import java.io.FileNotFoundException;
 
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.Disposable;
 
 /**
@@ -45,6 +46,8 @@ public interface VideoPlayer extends Disposable {
 	  */
 	 boolean play (FileHandle file) throws FileNotFoundException;
 
+	 ShaderProgram getShader();
+	 
 	 /**
 	  * This function needs to be called every frame, so that the player can update all the buffers.
 	  * Normal usecase is to start rendering after {@link isBuffered()} returns true.

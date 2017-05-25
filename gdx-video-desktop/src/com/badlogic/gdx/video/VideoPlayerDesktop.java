@@ -342,4 +342,9 @@ public class VideoPlayerDesktop implements VideoPlayer {
 	 @Override public boolean isPlaying () {
 		  return playing;
 	 }
+
+	@Override
+	public ShaderProgram getShader() {
+		return shader;
+	}
 }

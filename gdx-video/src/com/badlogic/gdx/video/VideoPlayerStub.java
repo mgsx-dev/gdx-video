@@ -19,6 +19,7 @@ package com.badlogic.gdx.video;
 import java.io.FileNotFoundException;
 
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 
 class VideoPlayerStub implements VideoPlayer {
 
@@ -66,5 +67,10 @@ class VideoPlayerStub implements VideoPlayer {
 
 	 @Override public void dispose () {
 	 }
+
+	@Override
+	public ShaderProgram getShader() {
+		return null;
+	}
 
 }
