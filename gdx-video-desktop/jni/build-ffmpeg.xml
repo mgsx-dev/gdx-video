@@ -14,10 +14,7 @@
         <!-- apply patches to hide certain globals -->
         <patch dir="ffmpeg" patchfile="hide_ffmpeg_globals.patch" strip="0"/>
 
-        <ant antfile="build-ffmpeg-linux32.xml"/>
         <ant antfile="build-ffmpeg-linux64.xml"/>
-        <ant antfile="build-ffmpeg-windows32.xml"/>
-        <ant antfile="build-ffmpeg-windows64.xml"/>
     </target>
 
     <target name="all" depends="compile-natives"/>

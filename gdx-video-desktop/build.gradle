@@ -1,4 +1,17 @@
+buildscript {
+	repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.badlogicgames.gdx:gdx-jnigen:1.9.4'
+    }
+}
+
 apply plugin: "java"
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.6
 
 sourceSets {
     main {
@@ -9,5 +22,50 @@ sourceSets {
 }
 
 eclipse.project {
-    name = projectGroup + "-gdx-video-desktop"
+    name = "gdx-video-desktop"
+}
+
+import com.badlogic.gdx.jnigen.*
+
+task buildNativeFFMPEG(){
+	doLast{
+		BuildExecutor.executeAnt("$projectDir/jni/build-ffmpeg.xml", "-v -Dhas-compiler=true clean compile-natives");
+	}
+}
+
+task buildNativeWrapper(){
+	doLast{
+		BuildExecutor.executeAnt("$projectDir/jni/build-linux64.xml", "-v -Dhas-compiler=true clean postcompile");
+	}
+}
+
+task buildNative(dependsOn: [buildNativeWrapper, buildNativeFFMPEG]){
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+task nativeJar(type: Jar) {
+    from("libs/linux64")
+}
+
+publishing {
+    publications {
+        core(MavenPublication) {
+            groupId groupName
+            artifactId 'gdx-video-desktop'
+            from components.java
+            
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+        natives(MavenPublication) {
+            groupId groupName
+            artifactId 'gdx-video-platform'
+            artifact nativeJar {
+                classifier "natives-desktop"
+            }
+        }
+    }
 }

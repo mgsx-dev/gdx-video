@@ -1,4 +1,7 @@
 apply plugin: "java"
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.6
 
 sourceSets {
     main {
@@ -9,5 +12,24 @@ sourceSets {
 }
 
 eclipse.project {
-    name = projectGroup + "-gdx-video"
+    name = "gdx-video-core"
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+
+publishing {
+    publications {
+        api(MavenPublication) {
+            groupId groupName
+            artifactId 'gdx-video'
+            
+            from components.java
+            
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
 }
