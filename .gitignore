@@ -53,3 +53,8 @@ libgdx-*.zip.MD5
 
 #ensure gdx-setup.jar works properly
 !/extensions/gdx-setup/src/com/badlogic/gdx/setup/resources/gwt/war
+/.gradle/
+/build/
+.project
+.settings/
+.classpath
