@@ -230,13 +230,13 @@ public class VideoPlayerDesktop implements VideoPlayer {
 					 }
 				}
 
-				showAlreadyDecodedFrame = false;
+				showAlreadyDecodedFrame = true;
 				long currentFrameTimestamp = (long)(decoder.getCurrentFrameTimestamp() * 1000);
 				long currentVideoTime = (System.currentTimeMillis() - startTime);
 				int difference = (int)(currentFrameTimestamp - currentVideoTime);
 				if (difference > 20) {
 					 // Difference is more than a frame, draw this one twice
-					 showAlreadyDecodedFrame = true;
+					 showAlreadyDecodedFrame = false;
 				}
 
 				renderTexture();
