@@ -38,13 +38,10 @@ import com.badlogic.gdx.Files.FileType;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.VertexAttribute;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
 
 /** Android implementation of the VideoPlayer class.
  *
@@ -79,55 +76,26 @@ public class VideoPlayerAndroid implements VideoPlayer, OnFrameAvailableListener
 	private ShaderProgram shader = new ShaderProgram(vertexShaderCode, fragmentShaderCode);
 	private int[] textures = new int[1];
 	private SurfaceTexture videoTexture;
+	private FrameBuffer frame;
+	private SpriteBatch batch;
 
 	private MediaPlayer player;
 	private boolean prepared = false;
 	private boolean frameAvailable = false;
 	private boolean done = false;
 
-	private Viewport viewport;
-	private Camera cam;
-	private Mesh mesh;
-
-	private boolean customMesh = false;
-
 	VideoSizeListener sizeListener;
 	CompletionListener completionListener;
-	private int primitiveType = GL20.GL_TRIANGLES;
-
 	private float currentVolume = 1.0f;
 
 	/** Used for sending mediaplayer tasks to the Main Looper */
 	private static Handler handler;
 
 	/** Lock used for waiting if the player was not yet created. */
-	Object lock = new Object();
+	final Object lock = new Object();
 
 	public VideoPlayerAndroid () {
-		this(new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
-	}
-
-	public VideoPlayerAndroid (Viewport viewport) {
 		setupRenderTexture();
-
-		this.viewport = viewport;
-		cam = viewport.getCamera();
-		mesh = new Mesh(true, 4, 6, VertexAttribute.Position(), VertexAttribute.TexCoords(0));
-		//@off
-		mesh.setVertices(new float[] {0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0});
-		//@on
-		mesh.setIndices(new short[] {0, 1, 2, 2, 3, 0});
-
-		initializeMediaPlayer();
-	}
-
-	public VideoPlayerAndroid (Camera cam, Mesh mesh, int primitiveType) {
-		this.cam = cam;
-		this.mesh = mesh;
-		this.primitiveType = primitiveType;
-		customMesh = true;
-		setupRenderTexture();
-
 		initializeMediaPlayer();
 	}
 
@@ -170,30 +138,9 @@ public class VideoPlayerAndroid implements VideoPlayer, OnFrameAvailableListener
 		player.setOnPreparedListener(new OnPreparedListener() {
 			@Override
 			public void onPrepared (MediaPlayer mp) {
-				float x = -mp.getVideoWidth() / 2f;
-				float y = -mp.getVideoHeight() / 2f;
-				float width = mp.getVideoWidth();
-				float height = mp.getVideoHeight();
-
-				//@off
-					if(!customMesh)
-						mesh.setVertices(new float[] {x, y, 0, 0, 1, x + width, y, 0, 1, 1, x + width, y + height, 0, 1, 0, x, y + height, 0, 0, 0});
-					 //@on
-
-				// set viewport world dimensions according to video dimensions and viewport type
-				if (viewport != null) {
-					viewport.setWorldSize(width, height);
-					Gdx.app.postRunnable(new Runnable() {
-						@Override
-						public void run () {
-							// force viewport update to let scaling take effect
-							viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-						}
-					});
-				}
 				prepared = true;
 				if (sizeListener != null) {
-					sizeListener.onVideoSize(width, height);
+					sizeListener.onVideoSize(mp.getVideoWidth(), mp.getVideoHeight());
 				}
 				mp.start();
 			}
@@ -235,35 +182,27 @@ public class VideoPlayerAndroid implements VideoPlayer, OnFrameAvailableListener
 	}
 
 	@Override
-	public void resize (int width, int height) {
-		if (!customMesh) {
+	public Texture getTexture () {
+		if (!done && prepared) {
+			synchronized (this) {
+				if (frameAvailable) {
+					if (frame == null)
+						frame = new FrameBuffer(Pixmap.Format.RGB888, player.getVideoWidth(), player.getVideoHeight(), false);
+					frame.bind();
+					videoTexture.updateTexImage();
+					frameAvailable = false;
 
-			viewport.update(width, height);
-		}
-	}
+					frame.begin();
+					batch.begin();
+					GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textures[0]);
+					shader.bind();
 
-	@Override
-	public boolean render () {
-		if (done) {
-			return false;
-		}
-		if (!prepared) {
-			return true;
-		}
-		synchronized (this) {
-			if (frameAvailable) {
-				videoTexture.updateTexImage();
-				frameAvailable = false;
+					batch.end();
+					frame.end();
+				}
 			}
 		}
-
-		// Draw texture
-		GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textures[0]);
-		shader.bind();
-		shader.setUniformMatrix(UNIFORM_CAMERATRANSFORM, cam.combined);
-		mesh.render(shader, primitiveType);
-
-		return !done;
+		return frame != null ? frame.getColorBufferTexture() : null;
 	}
 
 	/** For android, this will return whether the prepareAsync method of the android MediaPlayer is done with preparing.
@@ -284,6 +223,7 @@ public class VideoPlayerAndroid implements VideoPlayer, OnFrameAvailableListener
 	}
 
 	private void setupRenderTexture () {
+		batch = new SpriteBatch();
 		// Generate the actual texture
 		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
 		GLES20.glGenTextures(1, textures, 0);
@@ -324,14 +264,6 @@ public class VideoPlayerAndroid implements VideoPlayer, OnFrameAvailableListener
 		videoTexture.detachFromGLContext();
 
 		GLES20.glDeleteTextures(1, textures, 0);
-
-		if (shader != null) {
-			shader.dispose();
-		}
-
-		if (!customMesh && mesh != null) {
-			mesh.dispose();
-		}
 	}
 
 	@Override
